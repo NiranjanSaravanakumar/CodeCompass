@@ -10,7 +10,9 @@ FastAPI + gemini + GitHub API · React + Vite
 ## Local Setup
 ```bash
 # backend
-cd backend && source .venv/bin/activate
+cd backend 
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 uvicorn main:app --reload --port 8000
 
 # frontend
