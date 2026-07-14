@@ -1,4 +1,4 @@
-# CodeCompass (Codebase Onboarder)
+# CodeCompass
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)
@@ -6,167 +6,124 @@
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-> Paste a GitHub repository URL and instantly get an AI-generated onboarding guide — plus a chat interface to ask questions about that codebase.
-
-
----
+CodeCompass is a lightweight AI-powered onboarding tool. Paste a public GitHub repository URL, and the app will analyze the repository, generate a structured onboarding guide, and let you chat with an AI assistant about that codebase.
 
 ## Table of Contents
 
-1. [Project Overview](#1-project-overview)
-2. [Installation Guide](#2-installation-guide)
-3. [Clone the Repository](#3-clone-the-repository)
-4. [Git Setup](#4-git-setup)
-5. [Dependency Installation](#5-dependency-installation)
-6. [Environment Variables](#6-environment-variables)
-7. [Running the Project](#7-running-the-project)
-8. [Complete Folder Structure](#8-complete-folder-structure)
-9. [Component Documentation](#9-component-documentation)
-10. [API Documentation](#10-api-documentation)
-11. [Backend Explanation](#11-backend-explanation)
-12. [Database Documentation](#12-database-documentation)
-13. [Configuration Files](#13-configuration-files)
-14. [Scripts](#14-scripts)
-15. [Assets](#15-assets)
-16. [Deployment](#16-deployment)
-17. [Troubleshooting](#17-troubleshooting)
+- [Project Overview](#project-overview)
+- [Installation](#installation)
+- [Clone the Repository](#clone-the-repository)
+- [Git Basics](#git-basics)
+- [Environment Variables](#environment-variables)
+- [Running the Project](#running-the-project)
+- [Project Structure](#project-structure)
+- [Frontend Components](#frontend-components)
+- [API Reference](#api-reference)
+- [Backend Architecture](#backend-architecture)
+- [Configuration Files](#configuration-files)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
 
----
+## Project Overview
 
-## 1. Project Overview
+### What it solves
 
-### Project Name
+Starting with a new repository is often slow and repetitive. Developers must manually inspect files, read setup instructions, and infer architecture before they can contribute. CodeCompass reduces that first step by doing three things automatically:
 
-**CodeCompass** — displayed in the browser tab title. The UI branding uses **Codebase Onboarder**.
+1. It accepts a GitHub repository URL.
+2. It fetches the repository tree and important files from GitHub.
+3. It uses Google Gemini to generate an onboarding document and answer follow-up questions.
 
-### What Problem It Solves
+### Main features
 
-Onboarding to a new codebase is slow. Developers must manually read README files, explore folder structures, and trace entry points before they can contribute. CodeCompass automates the first pass:
+- Analyze a public GitHub repository URL
+- Fetch repository structure and key files
+- Generate an AI-written onboarding guide
+- Ask follow-up questions about the repository in chat
+- Render Markdown content in the UI
 
-1. You paste a **public GitHub repository URL**.
-2. The backend fetches the repo tree and key files via the **GitHub API**.
-3. **Google Gemini** generates a structured onboarding document.
-4. You can **chat** with an AI assistant that has context about that repository.
-
-### Features
-
-| Feature | Description |
-|---------|-------------|
-| GitHub URL analysis | Accepts `https://github.com/owner/repo` (`.git` suffix is stripped automatically) |
-| Smart file fetching | Pulls important files (`README.md`, `package.json`, `requirements.txt`, entry points, etc.) |
-| AI onboarding doc | Generates overview, tech stack, folder structure, setup steps, and architecture sections |
-| Interactive chat | Ask follow-up questions about the analyzed repository |
-| Split-panel UI | Onboarding doc on the left, chat on the right |
-| Markdown rendering | Docs and chat responses render as formatted Markdown |
-
-### Tech Stack
+### Tech stack
 
 | Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Frontend** | React 19 | UI components and state |
-| | Vite 8 | Dev server, bundler, HMR |
-| | Axios | HTTP requests to the backend |
-| | react-markdown | Renders AI-generated Markdown |
-| **Backend** | Python 3.10+ | Server runtime |
-| | FastAPI | REST API framework |
-| | Uvicorn | ASGI server |
-| | Pydantic | Request/response validation |
-| | python-dotenv | Loads `.env` secrets |
-| | requests | Calls GitHub REST/raw APIs |
-| | google-generativeai | Calls Google Gemini API |
-| **External APIs** | GitHub API | Repository tree, metadata, file content |
-| | Google Gemini (`gemini-2.5-flash`) | Onboarding doc + chat generation |
+| --- | --- | --- |
+| Frontend | React 19 | UI and state management |
+| Frontend | Vite 8 | Dev server and build tool |
+| Frontend | Axios | HTTP requests to the backend |
+| Frontend | react-markdown | Render Markdown content |
+| Backend | Python 3.10+ | Server runtime |
+| Backend | FastAPI | REST API framework |
+| Backend | Uvicorn | ASGI server |
+| Backend | Pydantic | Request validation |
+| Backend | python-dotenv | Load environment variables |
+| External API | GitHub REST API | Read repository metadata and file content |
+| External API | Google Gemini | Generate docs and chat answers |
 
-### Architecture Overview
+### Architecture overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Browser (React + Vite)                   │
-│  App.jsx  ──POST /analyze──►  FastAPI (main.py)                 │
-│           ◄── onboarding_doc ──                                 │
-│           ──POST /chat──────►  FastAPI                          │
-│           ◄── answer ──────────                                 │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │
-                ┌───────────────┴───────────────┐
-                ▼                               ▼
-     github_service.py                  gemini_service.py
-     (GitHub API)                       (Gemini API)
-                │                               │
-                └─────────── repo_context ──────┘
-                            (in-memory store)
+```mermaid
+flowchart LR
+    A[React + Vite UI] -->|POST /analyze| B[FastAPI backend]
+    A -->|POST /chat| B
+    B --> C[GitHub service]
+    B --> D[Gemini service]
+    C --> E[GitHub API]
+    D --> F[Google Gemini API]
 ```
 
-**Request flow for `/analyze`:**
+The flow is simple:
 
-1. Frontend sends `{ github_url }` to the backend.
-2. `github_service.get_repo_context()` parses the URL, fetches the file tree, reads up to 20 important files, and returns a context object.
-3. Context is stored in an in-memory dictionary (`repo_store`) keyed by `owner/repo`.
-4. `gemini_service.generate_onboarding()` sends the context to Gemini and returns Markdown text.
-5. Frontend displays the doc and enables chat.
+1. The frontend sends a repository URL to the backend.
+2. The backend fetches the repository tree and important files.
+3. The backend stores the context in memory for the current server session.
+4. Gemini generates onboarding content and answers chat questions.
 
-**Request flow for `/chat`:**
+### Folder structure
 
-1. Frontend sends `{ repo_id, question, chat_history }`.
-2. Backend looks up cached context from `repo_store`.
-3. `gemini_service.answer_question()` builds a prompt with repo files + chat history.
-4. Gemini returns an answer; frontend appends it to the chat.
-
-### Folder Structure (High Level)
-
-```
+```text
 CodeCompass/
-├── backend/           # Python FastAPI server
-│   ├── main.py        # API routes and app setup
-│   ├── github_service.py
+├── backend/
+│   ├── main.py
 │   ├── gemini_service.py
-│   └── requirements.txt
-├── frontend/          # React + Vite client
+│   ├── github_service.py
+│   ├── requirements.txt
+│   └── .venv/ (local virtual environment)
+├── frontend/
 │   ├── src/
-│   │   ├── App.jsx    # Main (and only) UI component
+│   │   ├── App.jsx
 │   │   ├── App.css
-│   │   ├── main.jsx   # React entry point
+│   │   ├── main.jsx
 │   │   └── index.css
-│   ├── public/        # Static assets
-│   ├── index.html
+│   ├── public/
 │   ├── package.json
-│   └── vite.config.js
-├── .gitignore
-└── README.md
+│   ├── vite.config.js
+│   └── eslint.config.js
+├── README.md
+└── requirements.txt (root-level, not used by this project)
 ```
 
-> **Note:** The root-level `requirements.txt` is **not** used by this project. Backend dependencies live in `backend/requirements.txt`.
+> The root-level requirements file is not used for this app. Backend dependencies are managed from the backend folder.
 
----
-
-## 2. Installation Guide
-
-These steps assume a **fresh Windows, macOS, or Linux machine** with internet access.
+## Installation
 
 ### Prerequisites
 
-| Software | Minimum Version | Required For |
-|----------|-----------------|--------------|
-| **Git** | 2.30+ | Cloning and version control |
-| **Node.js** | 18+ (20 LTS recommended) | Frontend (npm, Vite) |
-| **Python** | 3.10+ | Backend (FastAPI) |
-| **GitHub account** | — | Optional token for higher API rate limits / private repos |
-| **Google AI Studio account** | — | Gemini API key (required) |
-
-This project does **not** use Java, a database, Docker, or pnpm/yarn by default.
-
----
+- Git 2.30+
+- Node.js 18+ (20 LTS recommended)
+- Python 3.10+
+- A Google AI Studio account for a Gemini API key
+- An optional GitHub token if you want to avoid rate limits or access private repositories
 
 ### Install Git
 
-**Windows:** Download from [git-scm.com](https://git-scm.com/) and run the installer.
+Windows:
+- Download Git from https://git-scm.com/
 
-**macOS:**
+macOS:
 ```bash
 brew install git
 ```
 
-**Linux (Debian/Ubuntu):**
+Ubuntu/Debian:
 ```bash
 sudo apt update && sudo apt install git
 ```
@@ -176,15 +133,14 @@ Verify:
 git --version
 ```
 
----
-
 ### Install Node.js and npm
 
-Node.js includes **npm** (Node Package Manager).
+Node.js includes npm automatically.
 
-**Windows / macOS:** Download the **LTS** installer from [nodejs.org](https://nodejs.org/).
+Windows/macOS:
+- Download the LTS installer from https://nodejs.org/
 
-**Linux (using NodeSource for Node 20):**
+Ubuntu/Debian:
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
@@ -192,129 +148,125 @@ sudo apt install -y nodejs
 
 Verify:
 ```bash
-node --version   # e.g. v20.x.x
-npm --version    # e.g. 10.x.x
+node --version
+npm --version
 ```
-
-**What is npm?**  
-npm downloads JavaScript packages listed in `package.json` into a local `node_modules/` folder.
-
----
 
 ### Install Python
 
-**Windows:** Download from [python.org](https://www.python.org/downloads/). Check **"Add Python to PATH"** during install.
+Windows:
+- Download Python from https://www.python.org/downloads/ and enable Add Python to PATH.
 
-**macOS:**
+macOS:
 ```bash
 brew install python
 ```
 
-**Linux:**
+Ubuntu/Debian:
 ```bash
 sudo apt update && sudo apt install python3 python3-venv python3-pip
 ```
 
 Verify:
 ```bash
-python --version   # or python3 --version
+python --version
 ```
 
----
+## Clone the Repository
 
-## 3. Clone the Repository
-
-Open a terminal and run:
+Run these commands in your terminal:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/CodeCompass.git
-```
-
-| Command | What it does |
-|---------|--------------|
-| `git clone <url>` | Downloads a full copy of the repository (all files and Git history) from GitHub to your machine. Creates a folder named after the repo. |
-
-```bash
+git clone https://github.com/<your-username>/CodeCompass.git
 cd CodeCompass
 ```
 
-| Command | What it does |
-|---------|--------------|
-| `cd CodeCompass` | Changes your terminal's current directory into the project folder. All following commands run relative to this path. |
+What each command does:
 
-**Optional — switch to a specific branch:**
-```bash
-git checkout main
-```
-| Command | What it does |
-|---------|--------------|
-| `git checkout main` | Switches to the `main` branch. Use this if you cloned a repo with multiple branches and want a specific one. |
+- `git clone ...` downloads the repository from GitHub to your local machine.
+- `cd CodeCompass` changes your terminal into the project folder.
 
-**Optional — get latest changes:**
+If you want the latest changes from the main branch later, run:
+
 ```bash
 git pull
 ```
-| Command | What it does |
-|---------|--------------|
-| `git pull` | Fetches new commits from the remote repository and merges them into your current branch. Run this to stay up to date with teammates. |
 
----
+## Git Basics
 
-## 4. Git Setup
+Here are the Git commands you will most likely use:
 
-A beginner-friendly reference for the Git commands you will use while working on this project.
+- `git init` creates a new Git repository in a folder.
+- `git remote add origin <url>` links your local repo to a remote GitHub repository.
+- `git status` shows which files changed.
+- `git add .` stages all changes for commit.
+- `git add <file>` stages a single file.
+- `git commit -m "message"` saves the staged changes with a message.
+- `git push origin main` uploads your changes to GitHub.
+- `git branch <name>` creates a new branch.
+- `git checkout <name>` switches to a branch.
+- `git switch -c <name>` creates and switches to a new branch in one step.
+- `git pull origin main` updates your branch with the latest remote changes.
+- `git merge <branch>` combines another branch into your current one.
 
-| Command | What it does |
-|---------|--------------|
-| `git init` | Creates a new empty Git repository in the current folder. **Not needed** after `git clone` — cloning already initializes Git history. |
-| `git remote add origin <url>` | Links your local repo to a GitHub remote named `origin`. Used when you create a repo locally first, then push it to GitHub. |
-| `git status` | Shows which files are modified, staged, or untracked. Run this often before committing. |
-| `git add .` | Stages **all** changed files for the next commit. |
-| `git add <file>` | Stages a single file. |
-| `git commit -m "message"` | Saves a snapshot of staged changes with a descriptive message. |
-| `git push origin main` | Uploads your local commits to GitHub on the `main` branch. |
-| `git branch feature-name` | Creates a new branch for isolated work (e.g. a bug fix or feature). |
-| `git checkout feature-name` | Switches to that branch. |
-| `git switch -c feature-name` | Modern shortcut: create **and** switch to a new branch. |
-| `git pull origin main` | Downloads and merges remote changes into your current branch. |
-| `git merge feature-name` | Combines another branch's commits into your current branch. |
-| **Conflict resolution** | If two people edit the same lines, Git marks conflicts in the file. Open the file, choose which changes to keep, remove conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`), then `git add` and `git commit`. |
-
-### Typical workflow
+Typical workflow:
 
 ```bash
-git pull                    # 1. Get latest code
-git switch -c my-feature    # 2. Create a branch
-# ... make changes ...
-git status                  # 3. Review changes
-git add .                   # 4. Stage changes
-git commit -m "Add feature" # 5. Commit
-git push -u origin my-feature  # 6. Push branch and open a PR on GitHub
+git pull
+git switch -c feature-name
+git status
+git add .
+git commit -m "Add feature"
+git push -u origin feature-name
 ```
 
----
+## Environment Variables
 
-## 5. Dependency Installation
+This project uses environment variables for secrets and local configuration.
 
-### Backend (Python)
+### Backend configuration
+
+Create a file named `.env` inside the backend folder.
+
+```text
+GEMINI_API_KEY=your_gemini_api_key
+GITHUB_TOKEN=your_optional_github_token
+```
+
+Where each variable is used:
+
+- `GEMINI_API_KEY` is required by the backend to call Google Gemini.
+- `GITHUB_TOKEN` is optional but recommended for GitHub API requests and private repository access.
+
+A starter file is included at backend/.env.example.
+
+### Frontend configuration
+
+Create a file named `.env.local` inside the frontend folder if you want to override the backend URL.
+
+```text
+VITE_API_BASE=http://localhost:8000
+```
+
+If this variable is not set, the app defaults to `http://localhost:8000`.
+
+## Running the Project
+
+### 1. Start the backend
+
+From the backend folder:
 
 ```bash
 cd backend
 python -m venv .venv
 ```
 
-| Step | What happens internally |
-|------|-------------------------|
-| `python -m venv .venv` | Creates an isolated Python environment in `.venv/`. Project packages are installed here instead of globally, avoiding version conflicts. |
-
-**Activate the virtual environment:**
-
-Windows (PowerShell):
+On Windows PowerShell:
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-macOS / Linux:
+On macOS/Linux:
 ```bash
 source .venv/bin/activate
 ```
@@ -324,79 +276,222 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-| Command | What happens internally |
-|---------|-------------------------|
-| `pip install -r requirements.txt` | Reads each line in `requirements.txt`, downloads matching packages from PyPI, and installs them into `.venv/`. |
+Start the server:
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
----
+The FastAPI backend will be available at:
 
-### Backend Python Dependencies
+- http://localhost:8000/
+- http://localhost:8000/docs
 
-| Package | Why it is used |
-|---------|----------------|
-| **fastapi** | Web framework for defining REST API routes (`/analyze`, `/chat`) |
-| **uvicorn** | ASGI server that runs the FastAPI app |
-| **pydantic** | Validates request bodies (`AnalyzeRequest`, `ChatRequest`) |
-| **python-dotenv** | Loads `GEMINI_API_KEY` and `GITHUB_TOKEN` from `.env` |
-| **requests** | HTTP client for GitHub API and raw file URLs |
-| **google-generativeai** | Official SDK for Google Gemini text generation |
-| **starlette** | Underlying ASGI toolkit used by FastAPI (middleware, HTTP) |
-| **httpx / httpcore / h11** | HTTP stack dependencies (used transitively) |
-| **annotated-types / typing_extensions** | Type hint support for Pydantic |
-| **click** | CLI utilities (used by Uvicorn) |
-| **certifi** | SSL certificate bundle for secure HTTPS |
-| **anthropic** | Listed in lock file but **not imported** in current source code |
+### 2. Start the frontend
 
----
-
-### Frontend (Node.js)
+In a second terminal:
 
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
 
-| Command | What happens internally |
-|---------|-------------------------|
-| `npm install` | Reads `package.json` and `package-lock.json`, resolves exact versions, downloads packages into `node_modules/`, and may update the lock file if needed. |
+The Vite dev server will be available at:
 
-| Concept | Explanation |
-|---------|-------------|
-| **package.json** | Declares project name, scripts, and dependency version ranges. |
-| **package-lock.json** | Locks exact installed versions so every developer gets identical dependencies. |
-| **node_modules/** | Folder where npm stores all downloaded packages. Never commit this folder. |
+- http://localhost:5173
 
-Install a single package (example):
-```bash
-npm install axios
+### 3. Use the app
+
+1. Open the frontend URL in your browser.
+2. Paste a public GitHub repository URL.
+3. Click Analyze.
+4. Read the generated onboarding guide.
+5. Ask questions in the chat panel.
+
+### Useful scripts
+
+From the frontend folder:
+
+- `npm run dev` starts the local development server.
+- `npm run build` creates a production build in the dist folder.
+- `npm run preview` previews the built app locally.
+- `npm run lint` runs ESLint.
+
+## Project Structure
+
+### Backend
+
+- `backend/main.py` defines the FastAPI app and the `/analyze` and `/chat` endpoints.
+- `backend/gemini_service.py` wraps the Gemini API calls for onboarding docs and chat answers.
+- `backend/github_service.py` parses GitHub URLs, fetches repo metadata, and reads important files.
+- `backend/requirements.txt` lists the Python dependencies for the backend.
+
+### Frontend
+
+- `frontend/src/App.jsx` is the main UI component. It manages the input form, repo analysis flow, and chat experience.
+- `frontend/src/App.css` contains the styling for the app layout and chat UI.
+- `frontend/src/main.jsx` mounts the React app into the DOM.
+- `frontend/src/index.css` provides base global styles.
+- `frontend/public/` contains static assets such as the favicon and SVG assets.
+
+## Frontend Components
+
+The React app is intentionally small and centered around a single main component.
+
+### App
+
+- Purpose: provide the full analysis and chat experience
+- State: repository URL, repo ID, onboarding document, chat history, question text, loading state, error state
+- Hooks used: `useState`, `useRef`, and `useEffect`
+- Parent component: none; it is the root UI component
+- Child components: none; the UI is built with plain JSX and CSS classes
+- Styling approach: custom CSS in App.css with a dark theme and responsive layout
+
+### main.jsx
+
+- Purpose: render the React app into the page root
+- Dependencies: React DOM and App
+
+## API Reference
+
+The backend exposes three routes.
+
+### GET /
+
+Returns a simple health/status message.
+
+Example response:
+
+```json
+{
+  "status": "ok",
+  "message": "Welcome to the GitHub Onboarding API"
+}
 ```
-Adds `axios` to `dependencies` in `package.json` and installs it locally.
+
+### POST /analyze
+
+Analyzes a GitHub repository URL and generates an onboarding document.
+
+Request body:
+
+```json
+{
+  "github_url": "https://github.com/owner/repo"
+}
+```
+
+Response:
+
+```json
+{
+  "repo_id": "owner/repo",
+  "onboarding_doc": "# Generated onboarding guide"
+}
+```
+
+Errors:
+
+- 400 if the URL is invalid
+- 500 if the repository cannot be analyzed or Gemini fails
+
+### POST /chat
+
+Answers a question about the previously analyzed repository.
+
+Request body:
+
+```json
+{
+  "repo_id": "owner/repo",
+  "question": "What does this project do?",
+  "chat_history": []
+}
+```
+
+Response:
+
+```json
+{
+  "answer": "A helpful answer about the repository"
+}
+```
+
+Errors:
+
+- 404 if the repository has not been analyzed yet
+- 500 if the chat answer generation fails
+
+## Backend Architecture
+
+The backend is intentionally simple and service-oriented.
+
+### Server architecture
+
+- FastAPI handles HTTP routes.
+- CORS middleware allows requests from the frontend.
+- A small in-memory store keeps repository context available during the current server session.
+
+### Services
+
+- `github_service.py` fetches repository metadata and important files.
+- `gemini_service.py` builds prompts and calls Gemini.
+
+### Validation and error handling
+
+- Requests are validated with Pydantic models.
+- Errors return clear HTTP responses with a detail message.
+
+## Database Documentation
+
+This project does not currently use a database.
+
+- No SQL database is configured.
+- No ORM layer is present.
+- Repository context is stored in memory only.
+
+## Configuration Files
+
+- `package.json` defines scripts and dependencies for the frontend.
+- `vite.config.js` configures the Vite development server and React plugin.
+- `eslint.config.js` defines the linting rules.
+- `backend/requirements.txt` contains Python dependencies.
+- `.gitignore` excludes build output, virtual environments, and local environment files.
+
+## Deployment
+
+This repository does not include deployment configuration yet.
+
+A typical deployment approach is:
+
+- Deploy the FastAPI backend to Render, Railway, Fly.io, or Azure App Service.
+- Deploy the Vite frontend to Vercel or Netlify.
+- Set the frontend environment variable `VITE_API_BASE` to the deployed backend URL.
+
+## Troubleshooting
+
+### Backend errors
+
+- If the backend cannot start, verify that Python and the dependencies are installed.
+- If Gemini returns an error, confirm that `GEMINI_API_KEY` is present in backend/.env.
+- If GitHub requests fail, verify the repository URL and optional GitHub token.
+
+### Frontend errors
+
+- If the frontend cannot reach the backend, ensure the backend is running on port 8000 or set `VITE_API_BASE` correctly.
+- If npm install fails, update Node.js and npm to a recent version.
+
+### Screenshots
+
+Add screenshots here:
+
+- Repository input screen
+- Generated onboarding guide view
+- Chat panel in use
 
 ---
 
-### Frontend npm Dependencies
-
-#### Production (`dependencies`)
-
-| Package | Why it is used |
-|---------|----------------|
-| **react** | UI library — components, state, hooks |
-| **react-dom** | Renders React components into the browser DOM |
-| **axios** | Sends HTTP POST requests to the FastAPI backend |
-| **react-markdown** | Converts AI-generated Markdown strings into HTML in the UI |
-
-#### Development (`devDependencies`)
-
-| Package | Why it is used |
-|---------|----------------|
-| **vite** | Dev server with Hot Module Replacement (HMR) and production bundler |
-| **@vitejs/plugin-react** | Enables React JSX/ Fast Refresh in Vite |
-| **eslint** | Lints JavaScript/JSX for errors and bad patterns |
-| **@eslint/js** | Base ESLint recommended rules |
-| **eslint-plugin-react-hooks** | Enforces Rules of Hooks |
-| **eslint-plugin-react-refresh** | Validates React Fast Refresh compatibility |
-| **globals** | Browser global variables for ESLint |
-| **@types/react / @types/react-dom** | TypeScript type definitions (for editor IntelliSense; project uses `.jsx`, not `.tsx`) |
+Built with Python, FastAPI, React, Vite, and Google Gemini.
 
 ---
 

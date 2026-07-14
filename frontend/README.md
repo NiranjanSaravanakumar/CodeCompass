@@ -1,16 +1,29 @@
-# React + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains the React + Vite client for CodeCompass.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The frontend provides the user interface for:
 
-## React Compiler
+- pasting a GitHub repository URL
+- sending the URL to the backend for analysis
+- rendering the generated onboarding document
+- chatting with the AI assistant about the repository
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Main files
 
-## Expanding the ESLint configuration
+- [src/App.jsx](src/App.jsx) contains the main app logic and UI
+- [src/App.css](src/App.css) contains the styling for the experience
+- [src/main.jsx](src/main.jsx) mounts the app into the DOM
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Development
+
+From this folder, run:
+
+```bash
+npm install
+npm run dev
+```
+
+The app expects the backend to be running at the URL defined by `VITE_API_BASE` or `http://localhost:8000` by default.
