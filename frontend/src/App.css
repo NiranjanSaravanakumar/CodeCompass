@@ -308,9 +308,43 @@ h1 {
   text-decoration: underline;
 }
 
+/* Splitter */
+.splitter {
+  width: 5px;
+  flex-shrink: 0;
+  background: #1e2535;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+.splitter:hover,
+.splitter:active {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+.splitter-handle {
+  width: 3px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.4);
+  transition: background 0.15s, height 0.15s;
+  pointer-events: none;
+}
+
+.splitter:hover .splitter-handle {
+  background: rgba(99, 102, 241, 0.9);
+  height: 56px;
+}
+
 /* Chat panel */
 .chat-panel {
-  width: 420px;
+  /* width is set inline by JS; min-width enforced via JS too */
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: #0a0c12;

@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import axios from 'axios'
 import './App.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+
+const MIN_DOC_WIDTH = 280   // px
+const MIN_CHAT_WIDTH = 260  // px
 
 function App() {
   const [phase, setPhase] = useState('input')
@@ -16,9 +19,54 @@ function App() {
   const [error, setError] = useState(null)
   const chatBottomRef = useRef(null)
 
+  // Splitter state
+  const [chatWidth, setChatWidth] = useState(420)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const startChatWidth = useRef(420)
+  const containerRef = useRef(null)
+
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatHistory, chatLoading])
+
+  // ── Drag handlers ──────────────────────────────────────────────────────────
+  const onMouseDown = useCallback((e) => {
+    isDragging.current = true
+    startX.current = e.clientX
+    startChatWidth.current = chatWidth
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    e.preventDefault()
+  }, [chatWidth])
+
+  useEffect(() => {
+    const onMouseMove = (e) => {
+      if (!isDragging.current) return
+      const containerW = containerRef.current?.offsetWidth ?? window.innerWidth
+      const delta = startX.current - e.clientX   // dragging splitter left → chat grows
+      const newChatWidth = Math.min(
+        containerW - MIN_DOC_WIDTH,
+        Math.max(MIN_CHAT_WIDTH, startChatWidth.current + delta)
+      )
+      setChatWidth(newChatWidth)
+    }
+
+    const onMouseUp = () => {
+      if (!isDragging.current) return
+      isDragging.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+  // ──────────────────────────────────────────────────────────────────────────
 
   const handleAnalyze = async () => {
     if (!githubUrl.trim()) return
@@ -83,8 +131,9 @@ function App() {
   }
 
   return (
-    <div className="container result-layout">
-      <div className="doc-panel">
+    <div className="container result-layout" ref={containerRef}>
+      {/* ── Doc panel ── */}
+      <div className="doc-panel" style={{ flex: 1, minWidth: MIN_DOC_WIDTH }}>
         <div className="panel-header">
           <div className="panel-header-left">
             <span className="repo-pill">{repoId}</span>
@@ -96,7 +145,17 @@ function App() {
         </div>
       </div>
 
-      <div className="chat-panel">
+      {/* ── Splitter ── */}
+      <div
+        className="splitter"
+        onMouseDown={onMouseDown}
+        title="Drag to resize"
+      >
+        <div className="splitter-handle" />
+      </div>
+
+      {/* ── Chat panel ── */}
+      <div className="chat-panel" style={{ width: chatWidth, minWidth: MIN_CHAT_WIDTH }}>
         <div className="chat-header">
           <span>💬 Ask about this codebase</span>
         </div>
