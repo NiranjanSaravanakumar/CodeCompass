@@ -1,31 +1,26 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from groq import Groq
 
 load_dotenv()
 
-API_KEY = os.getenv("GEMINI_API_KEY")
-MODEL = "gemini-2.5-flash"
+API_KEY = os.getenv("GROQ_API_KEY")
+MODEL = "llama-3.3-70b-versatile"
 
-if API_KEY:
-    genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel(MODEL)
-else:
-    model = None
+client = Groq(api_key=API_KEY) if API_KEY else None
 
 
 def _generate_text(prompt: str, max_tokens: int) -> str:
-    if not model:
-        raise RuntimeError("GEMINI_API_KEY is not set")
+    if not client:
+        raise RuntimeError("GROQ_API_KEY is not set")
 
-    response = model.generate_content(
-        prompt,
-        generation_config={
-            "temperature": 0.3,
-            "max_output_tokens": max_tokens,
-        },
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+        max_tokens=max_tokens,
     )
-    return response.text
+    return response.choices[0].message.content
 
 
 def generate_onboarding(repo_context: dict) -> str:
@@ -86,8 +81,10 @@ def answer_question(question: str, repo_context: dict, chat_history: list[dict])
     messages.extend(chat_history)
     messages.append({"role": "user", "content": question})
 
-    prompt = "\n".join(
-        f"{item['role']}: {item['content']}" for item in messages
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        temperature=0.3,
+        max_tokens=2048,
     )
-
-    return _generate_text(prompt, 2048)
+    return response.choices[0].message.content

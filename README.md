@@ -3,7 +3,7 @@
 <img src="https://img.shields.io/badge/CodeCompass-v1.0.0-2A9068?style=for-the-badge" alt="CodeCompass v1.0.0" />
 <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react" alt="React 19" />
 <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi" alt="FastAPI" />
-<img src="https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google" alt="Gemini AI" />
+<img src="https://img.shields.io/badge/Groq-LLaMA_3.3_70B-F55036?style=for-the-badge&logo=groq" alt="Groq AI" />
 <img src="https://img.shields.io/badge/License-MIT-D8A84C?style=for-the-badge" alt="MIT License" />
 
 # CodeCompass
@@ -35,7 +35,7 @@ Connect any GitHub repository and instantly get:
 
 | Feature | Description |
 |---|---|
-| 🤖 **AI Onboarding Doc** | Gemini 2.5 Flash generates a complete onboarding guide from your repo |
+| 🤖 **AI Onboarding Doc** | Groq LLaMA 3.3 70B generates a complete onboarding guide from your repo |
 | 💬 **Contextual Chat** | Ask specific questions, get specific answers grounded in your actual code |
 | 🐙 **GitHub Integration** | Works with any public GitHub repo — paste the URL and go |
 | ↔️ **Resizable Split View** | Drag the splitter to customize the doc/chat ratio |
@@ -61,7 +61,7 @@ Connect any GitHub repository and instantly get:
 |---|---|---|
 | FastAPI | 0.115+ | REST API framework |
 | Python | 3.11+ | Runtime |
-| google-generativeai | — | Gemini 2.5 Flash integration |
+| groq | 1.5.0 | Groq LLaMA 3.3 70B integration |
 | requests | — | GitHub API calls |
 | python-dotenv | — | Environment config |
 
@@ -91,14 +91,14 @@ Connect any GitHub repository and instantly get:
 │                                                         │
 │  POST /analyze          POST /chat                      │
 │  ┌──────────────┐       ┌──────────────┐                │
-│  │ github_service│      │ gemini_service│               │
+│  │ github_service│      │  groq_service │               │
 │  │ (fetch repo) │──────▶│  (AI answer) │               │
 │  └──────────────┘       └──────────────┘                │
 └─────────────────────────────────────────────────────────┘
                         │
          ┌──────────────┴──────────────┐
          │                             │
-    GitHub API                    Gemini AI API
+    GitHub API                      Groq API
     (repo tree,                  (onboarding doc,
     file contents)                chat responses)
 ```
@@ -137,7 +137,7 @@ CodeCompass/
 └── backend/
     ├── main.py                       ← FastAPI app + routes
     ├── github_service.py             ← GitHub API integration
-    ├── gemini_service.py             ← Gemini AI integration
+    ├── groq_service.py               ← Groq LLaMA AI integration
     ├── requirements.txt
     └── .env                          ← API keys (not committed)
 ```
@@ -150,7 +150,7 @@ CodeCompass/
 
 - **Node.js** 18+
 - **Python** 3.11+
-- A **Gemini API key** from [Google AI Studio](https://aistudio.google.com/)
+- A **Groq API key** from [Groq Console](https://console.groq.com/)
 - (Optional) A **GitHub personal access token** for higher rate limits
 
 ### 1. Clone the repository
@@ -178,7 +178,7 @@ pip install -r requirements.txt
 Create `backend/.env`:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
 GITHUB_TOKEN=your_github_token_here   # optional
 ```
 
@@ -264,7 +264,7 @@ Health check endpoint.
 
 | Variable | Location | Required | Description |
 |---|---|---|---|
-| `GEMINI_API_KEY` | `backend/.env` | ✅ Yes | Google Gemini API key |
+| `GROQ_API_KEY` | `backend/.env` | ✅ Yes | Groq API key (get one free at console.groq.com) |
 | `GITHUB_TOKEN` | `backend/.env` | Optional | GitHub PAT for higher rate limits |
 | `VITE_API_BASE` | `frontend/.env` | Optional | Backend URL (defaults to `http://localhost:8000`) |
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from github_service import get_repo_context
-from gemini_service import generate_onboarding, answer_question
+from groq_service import generate_onboarding, answer_question
 
 app = FastAPI()
 
