@@ -1,41 +1,130 @@
+/**
+ * App — CodeCompass root
+ *
+ * Manages application state via a phase machine:
+ *   'landing'  → shows the full landing page (Hero + sections + Footer)
+ *   'loading'  → landing page with analyze-in-progress state
+ *   'result'   → compact nav + split-pane (DocPanel | Splitter | ChatPanel)
+ *
+ * All analysis and chat logic lives here and is passed to children as props
+ * so individual components stay stateless and easily testable.
+ */
 import { useState, useRef, useEffect, useCallback } from 'react'
-import ReactMarkdown from 'react-markdown'
 import axios from 'axios'
+
+import { useTheme } from './hooks/useTheme'
+
+import Navbar          from './components/layout/Navbar'
+import Footer          from './components/layout/Footer'
+import HeroSection     from './components/landing/HeroSection'
+import AboutSection    from './components/landing/AboutSection'
+import FeaturesSection from './components/landing/FeaturesSection'
+import HowItWorks      from './components/landing/HowItWorks'
+import CTASection      from './components/landing/CTASection'
+import DocPanel        from './components/app/DocPanel'
+import ChatPanel       from './components/app/ChatPanel'
+import Splitter        from './components/app/Splitter'
+
 import './App.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+/* ── Constants ────────────────────────────────────────────── */
+const API_BASE      = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+const MIN_DOC_WIDTH  = 280   // px
+const MIN_CHAT_WIDTH = 260   // px
 
-const MIN_DOC_WIDTH = 280   // px
-const MIN_CHAT_WIDTH = 260  // px
-
+/* ── Root component ───────────────────────────────────────── */
 function App() {
-  const [phase, setPhase] = useState('input')
-  const [githubUrl, setGithubUrl] = useState('')
-  const [repoId, setRepoId] = useState(null)
+  const { theme, toggleTheme } = useTheme()
+
+  /* Phase state machine */
+  const [phase, setPhase] = useState('landing')   // 'landing' | 'loading' | 'result'
+
+  /* Repo / doc state */
+  const [githubUrl,     setGithubUrl]     = useState('')
+  const [repoId,        setRepoId]        = useState(null)
   const [onboardingDoc, setOnboardingDoc] = useState('')
+  const [error,         setError]         = useState(null)
+
+  /* Chat state */
   const [chatHistory, setChatHistory] = useState([])
-  const [question, setQuestion] = useState('')
+  const [question,    setQuestion]    = useState('')
   const [chatLoading, setChatLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const chatBottomRef = useRef(null)
 
-  // Splitter state
+  /* Splitter / resize state */
   const [chatWidth, setChatWidth] = useState(420)
-  const isDragging = useRef(false)
-  const startX = useRef(0)
-  const startChatWidth = useRef(420)
-  const containerRef = useRef(null)
+  const isDragging      = useRef(false)
+  const startX          = useRef(0)
+  const startChatWidth  = useRef(420)
+  const containerRef    = useRef(null)
 
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatHistory, chatLoading])
+  /* ── Analyze handler ──────────────────────────────────── */
+  const handleAnalyze = useCallback(async (urlArg) => {
+    const url = (typeof urlArg === 'string' ? urlArg : githubUrl).trim()
+    if (!url) return
 
-  // ── Drag handlers ──────────────────────────────────────────────────────────
-  const onMouseDown = useCallback((e) => {
-    isDragging.current = true
-    startX.current = e.clientX
+    setError(null)
+    setPhase('loading')
+
+    try {
+      const res = await axios.post(`${API_BASE}/analyze`, { github_url: url })
+      setRepoId(res.data.repo_id)
+      setOnboardingDoc(res.data.onboarding_doc)
+      setChatHistory([])
+      setQuestion('')
+      setPhase('result')
+    } catch (err) {
+      const detail = err.response?.data?.detail ?? 'Something went wrong. Please check the URL and try again.'
+      setError(detail)
+      setPhase('landing')
+    }
+  }, [githubUrl])
+
+  /* ── Chat handler ─────────────────────────────────────── */
+  /**
+   * Accepts an optional message string. When called from the send button /
+   * keyboard Enter, the current `question` state is used. When called from
+   * a suggestion chip, the suggestion string is passed directly.
+   */
+  const handleChat = useCallback(async (messageArg) => {
+    const msg = (typeof messageArg === 'string' ? messageArg : question).trim()
+    if (!msg || chatLoading) return
+
+    const newHistory = [...chatHistory, { role: 'user', content: msg }]
+    setChatHistory(newHistory)
+    setQuestion('')
+    setChatLoading(true)
+
+    try {
+      const res = await axios.post(`${API_BASE}/chat`, {
+        repo_id:      repoId,
+        question:     msg,
+        chat_history: chatHistory,
+      })
+      setChatHistory([...newHistory, { role: 'assistant', content: res.data.answer }])
+    } catch (err) {
+      const detail = err.response?.data?.detail ?? 'Failed to get answer. Please try again.'
+      setChatHistory([...newHistory, { role: 'assistant', content: `⚠️ ${detail}` }])
+    } finally {
+      setChatLoading(false)
+    }
+  }, [question, chatLoading, chatHistory, repoId])
+
+  /* ── Back / reset ─────────────────────────────────────── */
+  const handleBack = useCallback(() => {
+    setPhase('landing')
+    setRepoId(null)
+    setOnboardingDoc('')
+    setChatHistory([])
+    setQuestion('')
+    setError(null)
+  }, [])
+
+  /* ── Splitter drag logic ───────────────────────────────── */
+  const onSplitterMouseDown = useCallback((e) => {
+    isDragging.current     = true
+    startX.current         = e.clientX
     startChatWidth.current = chatWidth
-    document.body.style.cursor = 'col-resize'
+    document.body.style.cursor     = 'col-resize'
     document.body.style.userSelect = 'none'
     e.preventDefault()
   }, [chatWidth])
@@ -44,161 +133,76 @@ function App() {
     const onMouseMove = (e) => {
       if (!isDragging.current) return
       const containerW = containerRef.current?.offsetWidth ?? window.innerWidth
-      const delta = startX.current - e.clientX   // dragging splitter left → chat grows
-      const newChatWidth = Math.min(
+      const delta      = startX.current - e.clientX   // drag left → chat grows
+      const newW       = Math.min(
         containerW - MIN_DOC_WIDTH,
         Math.max(MIN_CHAT_WIDTH, startChatWidth.current + delta)
       )
-      setChatWidth(newChatWidth)
+      setChatWidth(newW)
     }
 
     const onMouseUp = () => {
       if (!isDragging.current) return
-      isDragging.current = false
-      document.body.style.cursor = ''
+      isDragging.current             = false
+      document.body.style.cursor     = ''
       document.body.style.userSelect = ''
     }
 
     window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('mouseup',   onMouseUp)
     return () => {
       window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('mouseup',   onMouseUp)
     }
   }, [])
-  // ──────────────────────────────────────────────────────────────────────────
 
-  const handleAnalyze = async () => {
-    if (!githubUrl.trim()) return
-    setError(null)
-    setPhase('loading')
-    try {
-      const res = await axios.post(`${API_BASE}/analyze`, { github_url: githubUrl })
-      setRepoId(res.data.repo_id)
-      setOnboardingDoc(res.data.onboarding_doc)
-      setChatHistory([])
-      setPhase('result')
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Something went wrong')
-      setPhase('input')
-    }
-  }
-
-  const handleChat = async () => {
-    if (!question.trim() || chatLoading) return
-    const newHistory = [...chatHistory, { role: 'user', content: question }]
-    setChatHistory(newHistory)
-    setQuestion('')
-    setChatLoading(true)
-    try {
-      const res = await axios.post(`${API_BASE}/chat`, {
-        repo_id: repoId,
-        question: question,
-        chat_history: chatHistory,
-      })
-      setChatHistory([...newHistory, { role: 'assistant', content: res.data.answer }])
-    } catch (err) {
-      setChatHistory([...newHistory, { role: 'assistant', content: '⚠️ ' + (err.response?.data?.detail || 'Failed to get answer') }])
-    } finally {
-      setChatLoading(false)
-    }
-  }
-
-  if (phase === 'input' || phase === 'loading') {
+  /* ── Result view ──────────────────────────────────────── */
+  if (phase === 'result') {
     return (
-      <div className="container">
-        <div className="hero-badge">AI-Powered</div>
-        <h1>Codebase Onboarder</h1>
-        <p className="subtitle">Paste a GitHub repo URL and get an onboarding guide instantly</p>
-        <div className="input-row">
-          <input
-            className="url-input"
-            type="text"
-            placeholder="https://github.com/owner/repo"
-            value={githubUrl}
-            onChange={e => setGithubUrl(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAnalyze()}
-            disabled={phase === 'loading'}
+      <div className="app-result" ref={containerRef}>
+        <Navbar
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          variant="compact"
+          onBack={handleBack}
+          repoId={repoId}
+        />
+        <div className="result-content">
+          <DocPanel onboardingDoc={onboardingDoc} repoId={repoId} />
+          <Splitter onMouseDown={onSplitterMouseDown} />
+          <ChatPanel
+            chatHistory={chatHistory}
+            question={question}
+            setQuestion={setQuestion}
+            chatLoading={chatLoading}
+            onChat={handleChat}
+            repoId={repoId}
+            chatWidth={chatWidth}
+            minWidth={MIN_CHAT_WIDTH}
           />
-          <button className="analyze-btn" onClick={handleAnalyze} disabled={phase === 'loading'}>
-            {phase === 'loading' ? <span className="spinner" /> : 'Analyze'}
-          </button>
         </div>
-        {error && <p className="error">{error}</p>}
-        {phase === 'loading' && <p className="loading-text">Fetching repo and generating onboarding doc...</p>}
       </div>
     )
   }
 
+  /* ── Landing view (default + loading state) ───────────── */
   return (
-    <div className="container result-layout" ref={containerRef}>
-      {/* ── Doc panel ── */}
-      <div className="doc-panel" style={{ flex: 1, minWidth: MIN_DOC_WIDTH }}>
-        <div className="panel-header">
-          <div className="panel-header-left">
-            <span className="repo-pill">{repoId}</span>
-          </div>
-          <button className="back-btn" onClick={() => setPhase('input')}>← New Repo</button>
-        </div>
-        <div className="onboarding-doc">
-          <ReactMarkdown>{onboardingDoc}</ReactMarkdown>
-        </div>
-      </div>
-
-      {/* ── Splitter ── */}
-      <div
-        className="splitter"
-        onMouseDown={onMouseDown}
-        title="Drag to resize"
-      >
-        <div className="splitter-handle" />
-      </div>
-
-      {/* ── Chat panel ── */}
-      <div className="chat-panel" style={{ width: chatWidth, minWidth: MIN_CHAT_WIDTH }}>
-        <div className="chat-header">
-          <span>💬 Ask about this codebase</span>
-        </div>
-        <div className="chat-messages">
-          {chatHistory.length === 0 && (
-            <div className="chat-empty">
-              <p>🤖 Ask anything about <strong>{repoId}</strong></p>
-              <p className="chat-empty-sub">Architecture, setup, key files, how things work...</p>
-            </div>
-          )}
-          {chatHistory.map((msg, i) => (
-            <div key={i} className={`chat-msg ${msg.role}`}>
-              <span className="msg-label">{msg.role === 'user' ? '🧑 You' : '🤖 AI'}</span>
-              <div className="msg-content">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-              </div>
-            </div>
-          ))}
-          {chatLoading && (
-            <div className="chat-msg assistant">
-              <span className="msg-label">🤖 AI</span>
-              <div className="msg-content typing">
-                <span /><span /><span />
-              </div>
-            </div>
-          )}
-          <div ref={chatBottomRef} />
-        </div>
-        <div className="chat-input-row">
-          <input
-            className="chat-input"
-            type="text"
-            placeholder="Ask a question..."
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleChat()}
-            disabled={chatLoading}
-          />
-          <button className="send-btn" onClick={handleChat} disabled={chatLoading}>
-            {chatLoading ? '...' : 'Send'}
-          </button>
-        </div>
-      </div>
+    <div className="app-landing">
+      <Navbar theme={theme} onToggleTheme={toggleTheme} variant="landing" />
+      <main id="main-content">
+        <HeroSection
+          githubUrl={githubUrl}
+          setGithubUrl={setGithubUrl}
+          onAnalyze={handleAnalyze}
+          isLoading={phase === 'loading'}
+          error={error}
+        />
+        <AboutSection />
+        <FeaturesSection />
+        <HowItWorks />
+        <CTASection />
+      </main>
+      <Footer />
     </div>
   )
 }

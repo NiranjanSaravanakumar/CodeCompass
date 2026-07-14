@@ -25,7 +25,12 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "Welcome to the GitHub Onboarding API"}
+    return {"status": "ok", "message": "Welcome to the CodeCompass API", "version": "1.0.0"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy", "service": "CodeCompass API"}
+
 
 @app.post("/analyze")
 def analyze_repo(request: AnalyzeRequest):
