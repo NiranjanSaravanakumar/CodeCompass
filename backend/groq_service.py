@@ -29,31 +29,29 @@ def generate_onboarding(repo_context: dict) -> str:
     all_paths = repo_context["all_paths"]
     file_contents = repo_context["file_contents"]
 
+    # Cap file content display to first 40 paths (enough structure signal, fewer tokens)
+    folder_structure = "\n".join(all_paths[:40])
+
+    # Compact file section — each file already truncated in github_service
     files_section = "\n".join(
-        f"### {path}\n{content}" for path, content in file_contents.items()
+        f"[{path}]\n{content}" for path, content in file_contents.items()
     )
 
-    folder_structure = "\n".join(all_paths[:100])
+    prompt = (
+        f"Repo: {owner}/{repo}\n\n"
+        f"Structure (first 40 paths):\n{folder_structure}\n\n"
+        f"Key files:\n{files_section}\n\n"
+        "Write a concise developer onboarding doc covering:\n"
+        "1. Project Overview\n"
+        "2. Tech Stack\n"
+        "3. Folder Structure (key dirs)\n"
+        "4. Key Files\n"
+        "5. Getting Started\n"
+        "6. Architecture Overview\n"
+        "Be specific and concise. Skip obvious boilerplate."
+    )
 
-    prompt = f"""You are an expert software engineer onboarding a new developer to the repository: {owner}/{repo}.
-
-    Here is the folder structure (up to 100 files):
-    {folder_structure}
-
-    Here are the key files and their contents:
-    {files_section}
-
-    Generate a comprehensive onboarding document with the following sections:
-    1. **Project Overview** - What this project does in simple terms
-    2. **Tech Stack** - Languages, frameworks, and tools used
-    3. **Folder Structure** - Explain the purpose of key folders and files
-    4. **Key Files** - What the most important files do
-    5. **How to Get Started** - Setup steps based on what you see (requirements.txt, package.json, etc.)
-    6. **Architecture Overview** - How the different parts connect
-
-    Be specific, practical, and helpful for a developer seeing this codebase for the first time."""
-
-    return _generate_text(prompt, 4096)
+    return _generate_text(prompt, 2048)
 
 
 def answer_question(question: str, repo_context: dict, chat_history: list[dict]) -> str:
