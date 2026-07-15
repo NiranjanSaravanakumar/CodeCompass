@@ -40,77 +40,77 @@
 /* ─── Dark Theme (default) ───────────────────────────────────── */
 :root,
 [data-theme="dark"] {
-  --color-primary:        #2A9068;
-  --color-primary-hover:  #34A87A;
+  --color-primary: #2A9068;
+  --color-primary-hover: #34A87A;
   --color-primary-active: #1F6F50;
-  --color-primary-muted:  rgba(42, 144, 104, 0.12);
+  --color-primary-muted: rgba(42, 144, 104, 0.12);
   --color-primary-border: rgba(42, 144, 104, 0.28);
 
-  --color-secondary:        #D4834A;
-  --color-secondary-muted:  rgba(212, 131, 74, 0.12);
+  --color-secondary: #D4834A;
+  --color-secondary-muted: rgba(212, 131, 74, 0.12);
 
-  --color-accent:       #E8BB5C;
+  --color-accent: #E8BB5C;
   --color-accent-muted: rgba(232, 187, 92, 0.12);
 
-  --bg-base:    #141414;
+  --bg-base: #141414;
   --bg-surface: #1C1C1C;
-  --bg-elevated:#242424;
+  --bg-elevated: #242424;
   --bg-overlay: rgba(20, 20, 20, 0.88);
 
-  --text-primary:   #F0EEE8;
-  --text-secondary: #8A8580;
-  --text-tertiary:  #52504C;
+  --text-primary: #F0EEE8;
+  --text-secondary: #DEDAD2;
+  --text-tertiary: #A8A39C;
 
-  --border:        rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.07);
   --border-subtle: rgba(255, 255, 255, 0.035);
   --border-strong: rgba(255, 255, 255, 0.14);
 
-  --shadow-sm: 0 1px 3px  rgba(0,0,0,0.35);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
-  --shadow-xl: 0 16px 56px rgba(0,0,0,0.7);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 56px rgba(0, 0, 0, 0.7);
 
   --navbar-bg: rgba(20, 20, 20, 0.82);
 
-  --code-bg:   #1A1A1A;
+  --code-bg: #1A1A1A;
   --error-color: #E05252;
 }
 
 /* ─── Light Theme ────────────────────────────────────────────── */
 [data-theme="light"] {
-  --color-primary:        #1F6F50;
-  --color-primary-hover:  #18573F;
+  --color-primary: #1F6F50;
+  --color-primary-hover: #18573F;
   --color-primary-active: #145A40;
-  --color-primary-muted:  rgba(31, 111, 80, 0.08);
+  --color-primary-muted: rgba(31, 111, 80, 0.08);
   --color-primary-border: rgba(31, 111, 80, 0.22);
 
-  --color-secondary:       #C46A2D;
+  --color-secondary: #C46A2D;
   --color-secondary-muted: rgba(196, 106, 45, 0.09);
 
-  --color-accent:       #D8A84C;
+  --color-accent: #D8A84C;
   --color-accent-muted: rgba(216, 168, 76, 0.12);
 
-  --bg-base:    #F7F6F3;
+  --bg-base: #F7F6F3;
   --bg-surface: #FFFFFF;
-  --bg-elevated:#EFEDE8;
+  --bg-elevated: #EFEDE8;
   --bg-overlay: rgba(247, 246, 243, 0.9);
 
-  --text-primary:   #1A1917;
-  --text-secondary: #5C5A55;
-  --text-tertiary:  #9C9890;
+  --text-primary: #1A1917;
+  --text-secondary: #1E1C19;
+  --text-tertiary: #3D3B37;
 
-  --border:        rgba(0, 0, 0, 0.07);
+  --border: rgba(0, 0, 0, 0.07);
   --border-subtle: rgba(0, 0, 0, 0.035);
   --border-strong: rgba(0, 0, 0, 0.14);
 
-  --shadow-sm: 0 1px 3px  rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
-  --shadow-xl: 0 16px 56px rgba(0,0,0,0.12);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
+  --shadow-xl: 0 16px 56px rgba(0, 0, 0, 0.12);
 
   --navbar-bg: rgba(247, 246, 243, 0.82);
 
-  --code-bg:   #EFEDE8;
+  --code-bg: #EFEDE8;
   --error-color: #C0392B;
 }
 
@@ -149,13 +149,23 @@ body {
 }
 
 /* ─── Scrollbar ──────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: var(--radius-full);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
 
 /* ─── Selection ──────────────────────────────────────────────── */
 ::selection {
