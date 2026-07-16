@@ -613,11 +613,6 @@ If you're using CodeCompass to onboard to a new codebase, here are proven strate
 
 ---
 
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
-
----
 
 <div align="center">
 
